@@ -51,16 +51,8 @@ def value_iteration(rg):
     delta_stop = 0.001
 
     # Train
-    # TODO - Initialize the value function as a list (or 1D ndarray) of floats with
-    #        length equal to the number of states (this information is available to
-    #        you in the "env" object). It is common to sample initial values from a
-    #        normal distribution.
-    # V = ...
-    # TODO - Initialize the policy as a list (or 1D ndarray) of integers with length
-    #        equal to the number of states. Make sure these integers are in the range
-    #        of the number of actions. It is common to sample initial actions from a
-    #        uniform distribution.
-    # policy = ...
+    V = np.random.randn(env.num_states)
+    policy = np.random.randint(0,env.num_actions,env.num_states)
     iter = 0
     training_data = {
         'iter': [],
@@ -69,22 +61,24 @@ def value_iteration(rg):
     }
     while True:
         iter += 1
-        # TODO - Initialize delta.
-        # delta = ...
+        delta = 0
         for s in range(env.num_states):
-            # TODO - Implement one value iteration:
-            #
-            # v = ...           # <-- float
-            # Q = [ ... ]       # <-- list of floats
-            # policy[s] = ...   # <-- integer
-            # V[s] = ...        # <-- float
-            # delta = ...       # <-- float
+            # Implement one value iteration:
+            v = V[s]
+            Q = [sum([env.p(s1,s,a) * (env.r(s,a) + gamma * V[s1]) for s1 in range(env.num_states)]) for a in range(env.num_actions)]
+            policy[s] = np.argmax(Q)
+            V[s] = max(Q)
+            delta = max(delta, np.abs(v - V[s]))
+
         training_data['iter'].append(iter)
         training_data['V_mean'].append(np.mean(V))
         training_data['delta'].append(delta)
-        # TODO - Implement stopping criterion (replace "True" with a condition):
-        if True:
+
+        if delta < delta_stop:
             break
+
+    print(f'V iters: {iter} ; V mean: {np.mean(V):7.3f}')
+
 
     # Plot mean of value function (i.e., learning curve)
     plt.figure()
@@ -136,10 +130,10 @@ def value_iteration(rg):
     cbar.set_label('V(s)')
     plt.savefig('gridworld_vi_valuefunction.png')
 
-    # TODO - Check if the value function is what we expect. In particular, compute
+    # Check if the value function is what we expect. In particular, compute
     # the total discounted reward that you would get if from starting in state 1. We
     # will compare this to V[1].
-    # V_1 = ...
+    V_1 = 10 / (1 - gamma**5)
     print(f'V[1] = {V[1]:7.3f}, V_1 = {V_1:7.3f}')
 
 def policy_iteration(rg):
@@ -151,16 +145,8 @@ def policy_iteration(rg):
     delta_stop = 0.001
 
     # Train
-    # TODO - Initialize the value function as a list (or 1D ndarray) of floats with
-    #        length equal to the number of states (this information is available to
-    #        you in the "env" object). It is common to sample initial values from a
-    #        normal distribution.
-    # V = ...
-    # TODO - Initialize the policy as a list (or 1D ndarray) of integers with length
-    #        equal to the number of states. Make sure these integers are in the range
-    #        of the number of actions. It is common to sample initial actions from a
-    #        uniform distribution.
-    # policy = ...
+    V = np.random.randn(env.num_states)
+    policy = np.random.randint(0,env.num_actions,env.num_states)
     policy_iter = 0
     training_data = {
         'policy_iter': [],
@@ -174,31 +160,29 @@ def policy_iteration(rg):
         V_iter = 0
         while True:
             V_iter += 1
-            # TODO - Initialize delta.
-            # delta = ...
+            delta = 0
             for s in range(env.num_states):
-                # TODO - Implement one value iteration:
-                #
-                # v = ...           # <-- float (value at current state)
-                # a = ...           # <-- integer (action at current state)
-                # V[s] = ...        # <-- float
-                # delta = ...       # <-- float
-            # TODO - Implement stopping criterion (replace "True" with a condition):
-            if True:
+                # Implement one value iteration:
+                v = V[s]
+                a = policy[s]
+                V[s] = sum([env.p(s1, s, a) * (env.r(s,a) + gamma * V[s1]) for s1 in range(env.num_states)])
+                delta = max(delta, np.abs(v - V[s]))
+
+            if delta < delta_stop:
                 break
+        
         # Policy improvement
         done = True
         for s in range(env.num_states):
-            # TODO - Implement one policy iteration:
-            #
-            # a_old = ...           # <-- integer
-            # Q = ...               # <-- list of floats
-            # policy[s] = ...       # <-- integer
-            #
-            # TODO - Implement stopping criterion (replace "True" with a condition):
-            if True:
+            # Implement one policy iteration:
+            a_old = policy[s]
+            Q = [sum([env.p(s1,s,a) * (env.r(s,a) + gamma * V[s1]) for s1 in range(env.num_states)]) for a in range(env.num_actions)]            
+            policy[s] = np.argmax(Q)
+
+            if a_old != policy[s]:
                 done = False
-        print(f'{policy_iter} : {V_iter} : {np.mean(V):7.3f}')
+
+        print(f'P iter: {policy_iter} ; V iters: {V_iter} ; V mean: {np.mean(V):7.3f}')
 
         training_data['policy_iter'].append(policy_iter)
         training_data['V_iter'].append(V_iter)
@@ -247,10 +231,10 @@ def policy_iteration(rg):
     cbar.set_label('V(s)')
     plt.savefig('gridworld_pi_valuefunction.png')
 
-    # TODO - Check if the value function is what we expect. In particular, compute
+    # Check if the value function is what we expect. In particular, compute
     # the total discounted reward that you would get if from starting in state 1. We
     # will compare this to V[1].
-    # V_1 = ...
+    V_1 = 10 / (1 - gamma**5)
     print(f'V[1] = {V[1]:7.3f}, V_1 = {V_1:7.3f}')
 
 
@@ -636,8 +620,8 @@ def main():
     rg = np.random.default_rng()
     value_iteration(rg)
     policy_iteration(rg)
-    sarsa(rg)
-    q_learning(rg)
+    # sarsa(rg)
+    # q_learning(rg)
 
 
 if __name__ == '__main__':
